@@ -37,12 +37,45 @@
 #include "plugcontroller.h"
 #include "plugids.h"
 
+#include "base/source/fdebug.h"
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/base/ibstream.h"
 #include "public.sdk/source/vst/vstparameters.h"
 
+#include<filesystem>
+#include<iostream>
+
+
 namespace Steinberg {
 namespace MidiBanker {
+
+using Vst::StringListParameter;
+namespace fs = std::filesystem;
+
+void registerDevicePatch(StringListParameter* list, const fs::path& path, int depth = 0)
+{
+	if (!std::filesystem::exists(path))
+	{
+		SMTG_WARNING(path.string() + " is not found");
+		return;
+	}
+	
+	for (auto&& i : std::filesystem::directory_iterator(path))
+	{
+		auto p = i.path();
+		SMTG_DBPRT0(p.string().c_str());
+
+		if (p.extension() == ".txt")
+		{
+			list->appendString(p.stem().c_str());
+		}
+		
+		if (i.is_directory())
+		{
+			registerDevicePatch(list, p, depth + 1);
+		}
+	}
+}
 
 //-----------------------------------------------------------------------------
 tresult PLUGIN_API PlugController::initialize (FUnknown* context)
@@ -63,13 +96,11 @@ tresult PLUGIN_API PlugController::initialize (FUnknown* context)
 													 STR16 ("Param2"));
 	
 	//---PrefetchMode parameter
-	using Steinberg::Vst::StringListParameter;
-	StringListParameter* prefetchList = new StringListParameter (STR16 ("Prefetch Mode"), MidiBankerParams::kStrList);
-	parameters.addParameter (prefetchList);
+	auto deviceList = new StringListParameter (STR16 ("Device"), MidiBankerParams::kStrList);
+	parameters.addParameter(deviceList);
 
-	prefetchList->appendString (STR16 ("Is Never"));
-	prefetchList->appendString (STR16 ("Is Yet"));
-	prefetchList->appendString (STR16 ("Is Not Yet"));
+	deviceList->appendString (STR16 ("None"));
+	registerDevicePatch(deviceList, "/MidiBankerPatch");
 	// prefetchList->setNormalized (kIsYetPrefetchable / (kNumPrefetchableSupport - 1));
 
 	return result;
