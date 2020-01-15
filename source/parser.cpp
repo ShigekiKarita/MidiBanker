@@ -191,7 +191,6 @@ void test_parser()
 	}
 }
 
-
 int main(int argc, char** argv)
 {
 	test_parser();

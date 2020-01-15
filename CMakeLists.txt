@@ -1,4 +1,3 @@
-
 set(plug_sources
     source/version.h
     source/plugfactory.cpp
@@ -28,3 +27,16 @@ if(SMTG_MAC)
 elseif(SMTG_WIN)
     target_sources(${target} PRIVATE resource/plug.rc)
 endif()
+
+# require CMake installation
+# see https://github.com/catchorg/Catch2/blob/master/docs/cmake-integration.md#installing-catch2-from-git-repository
+find_package(Catch2 REQUIRED)
+add_executable(
+  test_${target}
+  source/test_main.cpp
+  source/test_parser.cpp)
+target_link_libraries(test_${target} Catch2::Catch2)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(test_${target})
